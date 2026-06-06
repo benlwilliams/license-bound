@@ -227,21 +227,23 @@ export default function ManualEntry() {
 
       {/* Start / End time */}
       <div className="grid grid-cols-2 gap-3">
-        <div className="space-y-1.5">
+        <div className="space-y-1.5 min-w-0">
           <Label>Start time</Label>
           <Input
             type="time"
             value={values.startTime}
             onChange={e => set('startTime', e.target.value)}
+            className="w-full"
           />
           {errors.startTime && <p className="text-xs text-destructive">{errors.startTime}</p>}
         </div>
-        <div className="space-y-1.5">
+        <div className="space-y-1.5 min-w-0">
           <Label>End time</Label>
           <Input
             type="time"
             value={values.endTime}
             onChange={e => set('endTime', e.target.value)}
+            className="w-full"
           />
           {errors.endTime && <p className="text-xs text-destructive">{errors.endTime}</p>}
         </div>
