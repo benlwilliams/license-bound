@@ -7,6 +7,11 @@ export function useSyncOnReconnect() {
   const wasOnline = useRef(navigator.onLine)
 
   useEffect(() => {
+    // Sync on startup if already online
+    if (familyId && navigator.onLine) {
+      syncPendingSessions(familyId)
+    }
+
     const handle = () => {
       if (!wasOnline.current && familyId) {
         syncPendingSessions(familyId)
