@@ -31,7 +31,7 @@ export default function ManualEntry() {
   const [values, setValues] = useState({
     driverId: editing?.driverId ?? selectedDriverId ?? '',
     supervisorId: editing?.supervisorId ?? selectedSupervisorId ?? '',
-    logType: editing?.logType ?? '',
+    logType: editing?.logType ?? LOG_TYPES.PRACTICE_30HR,
     date: editing?.date ?? dayKey(),
     startTime: editing?.startTime ? toTimeInput(editing.startTime) : '',
     endTime: editing?.endTime ? toTimeInput(editing.endTime) : '',
