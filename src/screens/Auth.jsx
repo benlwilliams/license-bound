@@ -1,20 +1,51 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { signIn, signUp, resetPassword } from '@/firebase/auth'
+import { setPersistence, browserLocalPersistence, browserSessionPersistence } from 'firebase/auth'
+import { auth, signIn, signUp, resetPassword } from '@/firebase/auth'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
-import { Car } from 'lucide-react'
+import { Car, Fingerprint } from 'lucide-react'
+
+const CRED_API = typeof window !== 'undefined' && 'PasswordCredential' in window
 
 export default function Auth() {
   const navigate = useNavigate()
-  const [mode, setMode] = useState('signin') // 'signin' | 'signup' | 'reset'
+  const [mode, setMode] = useState('signin')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [rememberMe, setRememberMe] = useState(true)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [resetSent, setResetSent] = useState(false)
+  const [biometricAvailable, setBiometricAvailable] = useState(false)
+
+  // Check silently for saved credentials on sign-in screen
+  useEffect(() => {
+    if (mode !== 'signin' || !CRED_API) return
+    navigator.credentials.get({ password: true, mediation: 'silent' })
+      .then(cred => { if (cred) setBiometricAvailable(true) })
+      .catch(() => {})
+  }, [mode])
+
+  async function handleBiometricLogin() {
+    if (!CRED_API) return
+    setLoading(true)
+    setError('')
+    try {
+      const cred = await navigator.credentials.get({ password: true, mediation: 'required' })
+      if (cred) {
+        await setPersistence(auth, browserLocalPersistence)
+        await signIn(cred.id, cred.password)
+        navigate('/')
+      }
+    } catch {
+      setError('Biometric login failed. Please sign in with your password.')
+    } finally {
+      setLoading(false)
+    }
+  }
 
   async function handleSubmit(e) {
     e.preventDefault()
@@ -22,8 +53,18 @@ export default function Auth() {
     setLoading(true)
 
     try {
+      const persistence = rememberMe ? browserLocalPersistence : browserSessionPersistence
+      await setPersistence(auth, persistence)
+
       if (mode === 'signin') {
         await signIn(email, password)
+        // Store credentials for biometric on future visits
+        if (rememberMe && CRED_API) {
+          try {
+            const cred = new window.PasswordCredential({ id: email, password })
+            await navigator.credentials.store(cred)
+          } catch {}
+        }
         navigate('/')
       } else if (mode === 'signup') {
         await signUp(email, password)
@@ -53,6 +94,19 @@ export default function Auth() {
             Track supervised driving hours for the Texas GDL program
           </p>
         </div>
+
+        {/* Biometric login button — only shown when saved credentials exist */}
+        {mode === 'signin' && biometricAvailable && (
+          <Button
+            variant="outline"
+            className="w-full gap-2"
+            onClick={handleBiometricLogin}
+            disabled={loading}
+          >
+            <Fingerprint size={18} />
+            Sign in with Face ID / Fingerprint
+          </Button>
+        )}
 
         <Card>
           <CardHeader className="pb-4">
@@ -105,6 +159,19 @@ export default function Auth() {
                       placeholder="••••••••"
                     />
                   </div>
+                )}
+
+                {/* Remember me — only on sign-in */}
+                {mode === 'signin' && (
+                  <label className="flex items-center gap-2 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={rememberMe}
+                      onChange={e => setRememberMe(e.target.checked)}
+                      className="w-4 h-4 rounded accent-primary"
+                    />
+                    <span className="text-sm text-muted-foreground">Remember me</span>
+                  </label>
                 )}
 
                 {error && (
