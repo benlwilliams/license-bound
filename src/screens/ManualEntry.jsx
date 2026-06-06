@@ -14,7 +14,8 @@ import useProfileStore from '@/store/profileStore'
 import useSessionStore from '@/store/sessionStore'
 import { calcCountedMinutes } from '@/services/capRules'
 import { calcNightMinutes, getCoordsForCity } from '@/services/nightHours'
-import { LOG_TYPES, LOG_TYPE_LABELS } from '@/utils/constants'
+import { getProgress } from '@/services/progress'
+import { LOG_TYPES, LOG_TYPE_LABELS, DL91B_OBSERVATION_TARGET, DL91B_INSTRUCTION_TARGET } from '@/utils/constants'
 import { dayKey, formatMinutes } from '@/utils/dateTime'
 import { validateManualSession } from '@/utils/validation'
 
@@ -28,10 +29,20 @@ export default function ManualEntry() {
   // If editing, location.state.session is populated
   const editing = location.state?.session ?? null
 
+  // Smart default: pick the log type the driver still needs most
+  const currentSessions = getSessionsForDriver(selectedDriverId ?? '')
+  const currentProgress = getProgress(currentSessions)
+  const smartLogType = (() => {
+    if (currentProgress.dl91bObs >= DL91B_OBSERVATION_TARGET &&
+        currentProgress.dl91bInstr >= DL91B_INSTRUCTION_TARGET) return LOG_TYPES.PRACTICE_30HR
+    if (currentProgress.dl91bObs >= DL91B_OBSERVATION_TARGET) return LOG_TYPES.DL91B_INSTRUCTION
+    return LOG_TYPES.DL91B_OBSERVATION
+  })()
+
   const [values, setValues] = useState({
     driverId: editing?.driverId ?? selectedDriverId ?? '',
     supervisorId: editing?.supervisorId ?? selectedSupervisorId ?? '',
-    logType: editing?.logType ?? LOG_TYPES.PRACTICE_30HR,
+    logType: editing?.logType ?? smartLogType,
     date: editing?.date ?? dayKey(),
     startTime: editing?.startTime ? toTimeInput(editing.startTime) : '',
     endTime: editing?.endTime ? toTimeInput(editing.endTime) : '',
