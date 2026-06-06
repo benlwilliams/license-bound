@@ -30,7 +30,10 @@ export default function SessionHistory() {
   }, [familyId, selectedDriverId])
 
   const sessions = getSessionsForDriver(selectedDriverId)
-  const sorted = [...sessions].sort((a, b) => b.date > a.date ? 1 : b.date < a.date ? -1 : 0)
+  const sorted = [...sessions].sort((a, b) => {
+    if (a.date !== b.date) return b.date > a.date ? 1 : -1
+    return new Date(b.startTime) - new Date(a.startTime)
+  })
   const selectedDriver = drivers.find(d => d.id === selectedDriverId)
 
   return (
