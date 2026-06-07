@@ -1,6 +1,7 @@
 import { HashRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { useEffect } from 'react'
 import { Toaster } from '@/components/ui/sonner'
+import { toast } from 'sonner'
 import useAuthStore from '@/store/authStore'
 import useUiStore from '@/store/uiStore'
 
@@ -43,6 +44,18 @@ export default function Router() {
     document.documentElement.classList.toggle('dark', darkMode)
     // Start Firebase auth listener
     const unsubscribe = initAuth()
+
+    // Show session cookie diagnostic result left by the sign-in page before its redirect
+    const diag = localStorage.getItem('lb_auth_diag')
+    if (diag) {
+      localStorage.removeItem('lb_auth_diag')
+      if (diag === 'ok') {
+        toast.success('Session cookie verified ✓', { duration: 4000 })
+      } else {
+        toast.error(`Session cookie issue: ${diag}`, { duration: 10000 })
+      }
+    }
+
     return unsubscribe
   }, [])
 

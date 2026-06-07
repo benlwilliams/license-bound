@@ -13,13 +13,10 @@ import {
 } from 'firebase/auth'
 import { app } from './config'
 
-// Request persistent storage from the browser before auth initializes
-navigator.storage?.persist?.()
-
-// initializeAuth sets persistence synchronously at startup — no async race condition.
-// Falls back to localStorage if IndexedDB is unavailable.
+// IndexedDB persistence has silent failures in iOS standalone PWA mode.
+// Use localStorage as the primary store — it survives force-quits reliably.
 export const auth = initializeAuth(app, {
-  persistence: [indexedDBLocalPersistence, browserLocalPersistence],
+  persistence: [browserLocalPersistence],
 })
 
 export { setPersistence, signInWithCustomToken, indexedDBLocalPersistence, browserLocalPersistence, browserSessionPersistence }

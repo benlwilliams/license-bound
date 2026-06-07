@@ -6,7 +6,6 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Car, Fingerprint } from 'lucide-react'
-import { toast } from 'sonner'
 
 const CRED_API = typeof window !== 'undefined' && 'PasswordCredential' in window
 const EMAIL_KEY = 'lb_email'
@@ -22,19 +21,16 @@ async function createServerSession(user) {
     })
     if (!res.ok) {
       const body = await res.text()
-      toast.error(`Session failed: ${res.status} — ${body}`, { duration: 6000 })
+      // Store result — page is about to reload so a toast would never render
+      localStorage.setItem('lb_auth_diag', `create-failed:${res.status}:${body}`)
       return
     }
-    // Immediately verify the cookie was stored and will be sent back on future requests
+    // Immediately verify the cookie is readable in this same session
     const verifyRes = await fetch('/.netlify/functions/verify-session', { credentials: 'include' })
-    if (verifyRes.ok) {
-      toast.success('Session cookie verified ✓')
-    } else {
-      const body = await verifyRes.json().catch(() => ({}))
-      toast.error(`Cookie not readable after save: ${body.error ?? verifyRes.status}`, { duration: 8000 })
-    }
+    const body = verifyRes.ok ? null : await verifyRes.json().catch(() => ({}))
+    localStorage.setItem('lb_auth_diag', verifyRes.ok ? 'ok' : `no-cookie:${body?.error ?? verifyRes.status}`)
   } catch (err) {
-    toast.error(`Session error: ${err.message}`, { duration: 6000 })
+    localStorage.setItem('lb_auth_diag', `error:${err.message}`)
   }
 }
 
