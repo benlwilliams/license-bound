@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { toast } from 'sonner'
 import { auth, signIn, signUp, resetPassword, setPersistence, browserSessionPersistence } from '@/firebase/auth'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -21,16 +22,13 @@ async function createServerSession(user) {
     })
     if (!res.ok) {
       const body = await res.text()
-      // Store result — page is about to reload so a toast would never render
-      localStorage.setItem('lb_auth_diag', `create-failed:${res.status}:${body}`)
+      toast.error(`Session failed: ${res.status}`, { duration: 5000 })
+      console.warn('[LicenseBound] create-session failed', res.status, body)
       return
     }
-    // Immediately verify the cookie is readable in this same session
-    const verifyRes = await fetch('/.netlify/functions/verify-session', { credentials: 'include' })
-    const body = verifyRes.ok ? null : await verifyRes.json().catch(() => ({}))
-    localStorage.setItem('lb_auth_diag', verifyRes.ok ? 'ok' : `no-cookie:${body?.error ?? verifyRes.status}`)
+    toast.success('Signed in ✓')
   } catch (err) {
-    localStorage.setItem('lb_auth_diag', `error:${err.message}`)
+    toast.error(`Session error: ${err.message}`, { duration: 5000 })
   }
 }
 
@@ -102,13 +100,12 @@ export default function Auth() {
           } catch {}
         }
 
-        // Full-page redirect so iOS detects the post-login navigation and offers to save the password
-        window.location.replace('/')
+        navigate('/')
       } else if (mode === 'signup') {
         const { user } = await signUp(emailValue, passwordValue)
         localStorage.setItem(EMAIL_KEY, emailValue)
         await createServerSession(user)
-        window.location.replace('/')
+        navigate('/')
       } else if (mode === 'reset') {
         await resetPassword(emailValue)
         setResetSent(true)
