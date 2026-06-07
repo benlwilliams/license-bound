@@ -1,5 +1,6 @@
 import {
   initializeAuth,
+  signInWithCustomToken,
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   signOut as firebaseSignOut,
@@ -16,12 +17,12 @@ import { app } from './config'
 navigator.storage?.persist?.()
 
 // initializeAuth sets persistence synchronously at startup — no async race condition.
-// Falls back to localStorage if IndexedDB is unavailable (older browsers).
+// Falls back to localStorage if IndexedDB is unavailable.
 export const auth = initializeAuth(app, {
   persistence: [indexedDBLocalPersistence, browserLocalPersistence],
 })
 
-export { setPersistence, indexedDBLocalPersistence, browserLocalPersistence, browserSessionPersistence }
+export { setPersistence, signInWithCustomToken, indexedDBLocalPersistence, browserLocalPersistence, browserSessionPersistence }
 
 export function signUp(email, password) {
   return createUserWithEmailAndPassword(auth, email, password)
@@ -31,7 +32,9 @@ export function signIn(email, password) {
   return signInWithEmailAndPassword(auth, email, password)
 }
 
-export function signOut() {
+export async function signOut() {
+  // Clear server-side session cookie so iOS can't restore a stale session
+  fetch('/.netlify/functions/delete-session', { method: 'POST' }).catch(() => {})
   return firebaseSignOut(auth)
 }
 

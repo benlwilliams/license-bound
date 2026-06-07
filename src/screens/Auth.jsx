@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { auth, signIn, signUp, resetPassword, setPersistence, indexedDBLocalPersistence, browserSessionPersistence } from '@/firebase/auth'
+import { auth, signIn, signUp, resetPassword, setPersistence, browserSessionPersistence } from '@/firebase/auth'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -8,11 +8,25 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Car, Fingerprint } from 'lucide-react'
 
 const CRED_API = typeof window !== 'undefined' && 'PasswordCredential' in window
+const EMAIL_KEY = 'lb_email'
+
+async function createServerSession(user) {
+  try {
+    const idToken = await user.getIdToken()
+    await fetch('/.netlify/functions/create-session', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ idToken }),
+    })
+  } catch {
+    // Non-fatal: Firebase Auth still works, cookie is just a backup
+  }
+}
 
 export default function Auth() {
   const navigate = useNavigate()
   const [mode, setMode] = useState('signin')
-  const [email, setEmail] = useState('')
+  const [email, setEmail] = useState(() => localStorage.getItem(EMAIL_KEY) ?? '')
   const [password, setPassword] = useState('')
   const [rememberMe, setRememberMe] = useState(true)
   const [error, setError] = useState('')
@@ -20,7 +34,7 @@ export default function Auth() {
   const [resetSent, setResetSent] = useState(false)
   const [biometricAvailable, setBiometricAvailable] = useState(false)
 
-  // Check silently for saved credentials on sign-in screen
+  // Check silently for saved credentials on sign-in screen (Android Chrome only)
   useEffect(() => {
     if (mode !== 'signin' || !CRED_API) return
     navigator.credentials.get({ password: true, mediation: 'silent' })
@@ -35,8 +49,9 @@ export default function Auth() {
     try {
       const cred = await navigator.credentials.get({ password: true, mediation: 'required' })
       if (cred) {
-        await setPersistence(auth, indexedDBLocalPersistence)
-        await signIn(cred.id, cred.password)
+        const { user } = await signIn(cred.id, cred.password)
+        localStorage.setItem(EMAIL_KEY, cred.id)
+        await createServerSession(user)
         navigate('/')
       }
     } catch {
@@ -52,21 +67,29 @@ export default function Auth() {
     setLoading(true)
 
     try {
-      const persistence = rememberMe ? indexedDBLocalPersistence : browserSessionPersistence
-      await setPersistence(auth, persistence)
-
       if (mode === 'signin') {
-        await signIn(email, password)
-        // Store credentials for biometric on future visits
+        // Only switch to session-only storage when the user explicitly unchecks remember me
+        if (!rememberMe) await setPersistence(auth, browserSessionPersistence)
+
+        const { user } = await signIn(email, password)
+
+        if (rememberMe) {
+          localStorage.setItem(EMAIL_KEY, email)
+          await createServerSession(user)
+        }
+
         if (rememberMe && CRED_API) {
           try {
             const cred = new window.PasswordCredential({ id: email, password })
             await navigator.credentials.store(cred)
           } catch {}
         }
+
         navigate('/')
       } else if (mode === 'signup') {
-        await signUp(email, password)
+        const { user } = await signUp(email, password)
+        localStorage.setItem(EMAIL_KEY, email)
+        await createServerSession(user)
         navigate('/')
       } else if (mode === 'reset') {
         await resetPassword(email)
