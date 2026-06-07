@@ -69,7 +69,7 @@ export function getProgress(sessions) {
 
 /**
  * Projects when the driver will finish all hours based on their recent pace.
- * Uses the last 14 days of sessions to calculate an average daily rate.
+ * Uses the last 30 days of sessions to calculate an average daily rate.
  *
  * @param {object[]} sessions
  * @param {object} progress - result of getProgress()
@@ -79,14 +79,14 @@ export function getPaceProjection(sessions, progress) {
   if (sessions.length === 0) return { projectedDate: null, minutesPerDay: 0 }
 
   const today = new Date()
-  const fourteenDaysAgo = new Date(today)
-  fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 14)
+  const thirtyDaysAgo = new Date(today)
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
 
-  const recentSessions = sessions.filter(s => new Date(s.date) >= fourteenDaysAgo)
+  const recentSessions = sessions.filter(s => new Date(s.date) >= thirtyDaysAgo)
   const totalRecentMinutes = recentSessions.reduce(
     (acc, s) => acc + (s.countedMinutes ?? s.totalMinutes ?? 0), 0
   )
-  const minutesPerDay = totalRecentMinutes / 14
+  const minutesPerDay = totalRecentMinutes / 30
 
   if (minutesPerDay === 0) return { projectedDate: null, minutesPerDay: 0 }
 

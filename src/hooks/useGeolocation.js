@@ -5,10 +5,10 @@ import { GPS_SAMPLE_INTERVAL_MS, GPS_DOWNSAMPLE_THRESHOLD } from '@/utils/consta
  * Tracks GPS position and builds a route array during a live session.
  * Works offline — the Geolocation API uses the device's GPS chip directly.
  */
-export function useGeolocation(active = false) {
+export function useGeolocation(active = false, initialRoute = []) {
   const [position, setPosition] = useState(null)  // { lat, lng, accuracy }
   const [error, setError] = useState(null)
-  const [route, setRoute] = useState([])           // [{ lat, lng, timestamp }, ...]
+  const [route, setRoute] = useState(initialRoute) // [{ lat, lng, timestamp }, ...]
   const watchIdRef = useRef(null)
   const lastSampleRef = useRef(0)
   const routeLengthRef = useRef(0)

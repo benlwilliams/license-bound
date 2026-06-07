@@ -64,8 +64,8 @@ export default function RoadTestReadiness() {
         />
       ) : (
         <StatusBanner
-          icon={<Clock size={18} />}
-          color="amber"
+          icon={<Clock size={18} className="text-amber-500" />}
+          color="plain"
           title="In progress"
           subtitle="Keep driving — the requirements below show what's still needed."
         />
@@ -150,9 +150,19 @@ export default function RoadTestReadiness() {
 // ── Sub-components ─────────────────────────────────────────────────────────────
 
 function StatusBanner({ icon, color, title, subtitle }) {
+  if (color === 'plain') {
+    return (
+      <div className="flex items-start gap-3 px-1 py-1">
+        <span className="shrink-0 mt-0.5">{icon}</span>
+        <div>
+          <p className="font-semibold text-sm">{title}</p>
+          <p className="text-xs text-muted-foreground mt-0.5">{subtitle}</p>
+        </div>
+      </div>
+    )
+  }
   const colors = {
     green: 'bg-green-50 border-green-200 text-green-800 dark:bg-green-900/20 dark:border-green-800 dark:text-green-300',
-    amber: 'bg-amber-50 border-amber-200 text-amber-800 dark:bg-amber-900/20 dark:border-amber-800 dark:text-amber-300',
     muted: 'bg-muted border-border text-muted-foreground',
   }
   return (

@@ -122,7 +122,7 @@ export default function Dashboard() {
           </div>
 
           <DailyCapRow items={[
-            { label: 'Today remaining', remaining: thirtyHrRemainingToday, max: THIRTY_HR_DAILY_MAX_MINUTES },
+            { label: "Today's Driving Time Allowed", remaining: thirtyHrRemainingToday, max: THIRTY_HR_DAILY_MAX_MINUTES },
           ]} />
         </CardContent>
       </Card>
@@ -134,17 +134,21 @@ export default function Dashboard() {
             Road Test
           </p>
 
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Calendar size={14} />
-              <span>Earliest allowed</span>
-            </div>
-            <span className="text-sm font-medium">
-              {progress.earliestTestDate ? formatDate(progress.earliestTestDate) : '—'}
-            </span>
-          </div>
+          {progress.earliestTestDate && new Date(progress.earliestTestDate) > new Date() && (
+            <>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Calendar size={14} />
+                  <span>Earliest allowed</span>
+                </div>
+                <span className="text-sm font-medium">
+                  {formatDate(progress.earliestTestDate)}
+                </span>
+              </div>
 
-          <Separator />
+              <Separator />
+            </>
+          )}
 
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -158,7 +162,7 @@ export default function Dashboard() {
 
           {pace.minutesPerDay > 0 && (
             <p className="text-xs text-muted-foreground text-right">
-              Avg {formatMinutes(pace.minutesPerDay)}/day over last 14 days
+              Avg {formatMinutes(pace.minutesPerDay)}/day over last 30 days
             </p>
           )}
 

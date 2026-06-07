@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import { persist } from 'zustand/middleware'
 import {
   getSessions as cloudGetSessions,
   saveSession as cloudSaveSession,
@@ -12,7 +13,9 @@ import {
   deleteSessionOffline,
 } from '@/db/offlineDB'
 
-const useSessionStore = create((set, get) => ({
+const useSessionStore = create(
+  persist(
+    (set, get) => ({
   // All loaded sessions keyed by driverId
   sessionsByDriver: {},
   loading: false,
@@ -173,6 +176,12 @@ const useSessionStore = create((set, get) => ({
       activeSession: state.activeSession ? { ...state.activeSession, ...updates } : null,
     })),
   clearActiveSession: () => set({ activeSession: null }),
-}))
+    }),
+    {
+      name: 'licensebound-active-session',
+      partialize: (state) => ({ activeSession: state.activeSession }),
+    }
+  )
+)
 
 export default useSessionStore

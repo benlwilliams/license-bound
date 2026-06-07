@@ -1,4 +1,6 @@
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { liveQuery } from 'dexie'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Switch } from '@/components/ui/switch'
@@ -16,6 +18,17 @@ export default function Settings() {
   const navigate = useNavigate()
   const { darkMode, toggleDarkMode } = useUiStore()
   const { user, familyId } = useAuthStore()
+
+  const [unsyncedCount, setUnsyncedCount] = useState(0)
+  useEffect(() => {
+    const sub = liveQuery(() =>
+      offlineDB.sessions.where('syncedToCloud').equals(0).count()
+    ).subscribe({
+      next: count => setUnsyncedCount(count),
+      error: () => setUnsyncedCount(0),
+    })
+    return () => sub.unsubscribe()
+  }, [])
 
   async function handleSignOut() {
     await signOut()
@@ -93,10 +106,17 @@ export default function Settings() {
           <div className="space-y-3">
             <p className="text-xs text-muted-foreground">Signed in as {user?.email}</p>
             <div className="flex gap-2">
-              <Button variant="outline" size="sm" onClick={handleSync} className="gap-2">
-                <RefreshCw size={15} />
-                Sync to cloud
-              </Button>
+              <div className="relative">
+                <Button variant="outline" size="sm" onClick={handleSync} className="gap-2">
+                  <RefreshCw size={15} />
+                  Sync to cloud
+                </Button>
+                {unsyncedCount > 0 && (
+                  <span className="absolute -top-1.5 -right-1.5 h-4 min-w-4 px-0.5 rounded-full bg-amber-500 text-[10px] text-white font-bold flex items-center justify-center">
+                    {unsyncedCount}
+                  </span>
+                )}
+              </div>
               <Button variant="outline" size="sm" onClick={handleSignOut} className="gap-2">
                 <LogOut size={15} />
                 Sign out

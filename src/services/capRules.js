@@ -84,6 +84,31 @@ function sumCountedMinutes(sessions, logType) {
 }
 
 /**
+ * Returns how many more minutes can be logged today for the given log type,
+ * based on sessions already recorded. Used by LiveSession to auto-stop at the cap.
+ */
+export function getDailyRemainingMinutes(logType, todaysSessions) {
+  if (logType === LOG_TYPES.DL91B_OBSERVATION) {
+    const used = sumMinutes(todaysSessions, LOG_TYPES.DL91B_OBSERVATION)
+                + sumMinutes(todaysSessions, LOG_TYPES.DL91B_INSTRUCTION)
+    return Math.max(0, DL91B_DAILY_MAX_MINUTES - used)
+  }
+  if (logType === LOG_TYPES.DL91B_INSTRUCTION) {
+    const usedInstr = sumCountedMinutes(todaysSessions, LOG_TYPES.DL91B_INSTRUCTION)
+    const usedObs   = sumMinutes(todaysSessions, LOG_TYPES.DL91B_OBSERVATION)
+    return Math.max(0, Math.min(
+      DL91B_DAILY_INSTRUCTION_MAX - usedInstr,
+      DL91B_DAILY_MAX_MINUTES - usedObs - usedInstr,
+    ))
+  }
+  if (logType === LOG_TYPES.PRACTICE_30HR) {
+    const used = sumCountedMinutes(todaysSessions, LOG_TYPES.PRACTICE_30HR)
+    return Math.max(0, THIRTY_HR_DAILY_MAX_MINUTES - used)
+  }
+  return Infinity
+}
+
+/**
  * Recalculates countedMinutes for all sessions on a given date for a driver.
  * Used when editing/deleting sessions to recompute ordering-dependent caps.
  * Sessions are assumed to be sorted chronologically (earliest first).

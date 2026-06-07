@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -24,6 +24,11 @@ export default function SessionSummary() {
   // Passed from LiveSession: { config, startMs, endMs, totalMinutes, route }
   const data = location.state
   const [saving, setSaving] = useState(false)
+
+  // If there's no session data (e.g. navigated here directly), bail out to home
+  useEffect(() => {
+    if (!data) navigate('/', { replace: true })
+  }, [])
 
   const summary = useMemo(() => {
     if (!data) return null

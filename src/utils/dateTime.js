@@ -1,8 +1,11 @@
 import { DRIVE_WINDOW_START_HOUR, DRIVE_WINDOW_END_HOUR } from './constants'
 
-/** Returns 'YYYY-MM-DD' for a given Date (or today if omitted) */
+/** Returns 'YYYY-MM-DD' for a given Date (or today if omitted), in local time */
 export function dayKey(date = new Date()) {
-  return date.toISOString().slice(0, 10)
+  const y = date.getFullYear()
+  const m = String(date.getMonth() + 1).padStart(2, '0')
+  const d = String(date.getDate()).padStart(2, '0')
+  return `${y}-${m}-${d}`
 }
 
 /** Parses a 'YYYY-MM-DD' string into a local-midnight Date */

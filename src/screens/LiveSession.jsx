@@ -1,53 +1,118 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { MapContainer, TileLayer, Polyline, CircleMarker, useMap } from 'react-leaflet'
 import 'leaflet/dist/leaflet.css'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Pause, Play, Square, Navigation, AlertCircle } from 'lucide-react'
+import { toast } from 'sonner'
 import { useGeolocation } from '@/hooks/useGeolocation'
 import { useSessionTimer } from '@/hooks/useSessionTimer'
 import { LOG_TYPE_LABELS } from '@/utils/constants'
-import { formatElapsed } from '@/utils/dateTime'
+import { formatElapsed, dayKey } from '@/utils/dateTime'
+import { getDailyRemainingMinutes } from '@/services/capRules'
+import useSessionStore from '@/store/sessionStore'
 
 export default function LiveSession() {
   const navigate = useNavigate()
   const location = useLocation()
-  const config = location.state   // { driverId, supervisorId, logType, city }
+  const { activeSession, startActiveSession, updateActiveSession, clearActiveSession, getSessionsForDriver } = useSessionStore()
 
-  // Wall-clock start time — never changes, used for the session record
-  const [sessionStartedAt] = useState(() => Date.now())
+  // Capture mount time once — used as fallback before the store initializes on a fresh session
+  const mountTimeRef = useRef(Date.now())
 
-  // Adjusted start for the timer — shifts on each resume to exclude pause time
-  const [effectiveStartTime, setEffectiveStartTime] = useState(() => Date.now())
-  const [paused, setPaused] = useState(false)
-  const [pausedElapsed, setPausedElapsed] = useState(0)
+  const incomingConfig = location.state  // present on fresh start from PreSession, null on return
 
-  const { position, error: gpsError, route } = useGeolocation(!paused)
+  // Initialize or validate on mount
+  useEffect(() => {
+    // Discard persisted sessions older than 4 hours — they can't be meaningfully resumed
+    if (!incomingConfig && activeSession) {
+      const ageMs = Date.now() - (activeSession.startedAt ?? 0)
+      if (ageMs > 4 * 60 * 60 * 1000) {
+        clearActiveSession()
+        navigate('/session/pre', { replace: true })
+        return
+      }
+    }
+
+    if (incomingConfig) {
+      const now = mountTimeRef.current
+      const today = dayKey()
+      const todaysSessions = getSessionsForDriver(incomingConfig.driverId)
+        .filter(s => s.date === today)
+      const capRemainingMs = getDailyRemainingMinutes(incomingConfig.logType, todaysSessions) * 60000
+      startActiveSession({
+        config: incomingConfig,
+        startedAt: now,
+        effectiveStartTime: now,
+        paused: false,
+        pausedElapsed: 0,
+        route: [],
+        capRemainingMs,
+      })
+    } else if (!activeSession) {
+      navigate('/session/pre', { replace: true })
+    }
+    // If returning (no incomingConfig but activeSession exists) — just render from store
+  }, [])
+
+  // Derive values — fall back to mount-time refs before the store initializes (first render only)
+  const config          = activeSession?.config          ?? incomingConfig
+  const sessionStartedAt = activeSession?.startedAt      ?? mountTimeRef.current
+  const effectiveStartTime = activeSession?.effectiveStartTime ?? mountTimeRef.current
+  const paused          = activeSession?.paused          ?? false
+  const storedRoute     = activeSession?.route           ?? []
+
+  const { position, error: gpsError, route } = useGeolocation(!paused, storedRoute)
   const elapsed = useSessionTimer(effectiveStartTime, !paused)
 
-  // Redirect if arrived without config (e.g. refreshed the page)
+  // Keep the store's route current as new GPS points arrive
   useEffect(() => {
-    if (!config) navigate('/session/pre', { replace: true })
-  }, [])
+    if (route.length > storedRoute.length) {
+      updateActiveSession({ route })
+    }
+  }, [route])
+
+  // Auto-stop at daily cap, with a 5-minute warning
+  const capRemainingMs = activeSession?.capRemainingMs ?? Infinity
+  const warned5MinRef = useRef(false)
+  useEffect(() => {
+    if (capRemainingMs === Infinity || elapsed === 0) return
+    const remaining = capRemainingMs - elapsed
+    if (remaining <= 5 * 60000 && remaining > 0 && !warned5MinRef.current) {
+      warned5MinRef.current = true
+      toast.warning('5 minutes until the daily limit — session will stop automatically')
+    }
+    if (elapsed >= capRemainingMs) {
+      toast.info('Daily limit reached — session ended automatically')
+      const endMs = Date.now()
+      const totalMinutes = Math.max(1, Math.round(elapsed / 60000))
+      const finalRoute = activeSession?.route ?? route
+      clearActiveSession()
+      navigate('/session/summary', {
+        state: { config, startMs: sessionStartedAt, endMs, totalMinutes, route: finalRoute },
+        replace: true,
+      })
+    }
+  }, [elapsed])
 
   if (!config) return null
 
   function handlePause() {
-    setPausedElapsed(elapsed)
-    setPaused(true)
+    updateActiveSession({ paused: true, pausedElapsed: elapsed })
   }
 
   function handleResume() {
-    // Shift effectiveStartTime so the timer resumes from pausedElapsed
-    setEffectiveStartTime(Date.now() - pausedElapsed)
-    setPaused(false)
+    const newEffective = Date.now() - elapsed
+    updateActiveSession({ paused: false, effectiveStartTime: newEffective })
   }
 
   function handleEnd() {
     const endMs = Date.now()
-    // Use elapsed (driving time only, excludes pauses) for totalMinutes
     const totalMinutes = Math.max(1, Math.round(elapsed / 60000))
+    const finalRoute = activeSession?.route ?? route
+
+    clearActiveSession()
 
     navigate('/session/summary', {
       state: {
@@ -55,7 +120,7 @@ export default function LiveSession() {
         startMs: sessionStartedAt,
         endMs,
         totalMinutes,
-        route,
+        route: finalRoute,
       },
       replace: true,
     })
