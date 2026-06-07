@@ -63,15 +63,17 @@ export default function Router() {
           <Route path="/history" element={<SessionHistory />} />
           <Route path="/session-detail" element={<SessionDetail />} />
           <Route path="/manual-entry" element={<ManualEntry />} />
-          <Route path="/session/pre" element={<PreSession />} />
-          <Route path="/session/live" element={<LiveSession />} />
-          <Route path="/session/summary" element={<SessionSummary />} />
           <Route path="/profiles" element={<Profiles />} />
           <Route path="/readiness" element={<RoadTestReadiness />} />
           <Route path="/export" element={<PDFExport />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="/import" element={<LogImport />} />
         </Route>
+
+        {/* Session flow — full-screen, no nav bar */}
+        <Route path="/session/pre"     element={<AuthGate><PreSession /></AuthGate>} />
+        <Route path="/session/live"    element={<AuthGate><LiveSession /></AuthGate>} />
+        <Route path="/session/summary" element={<AuthGate><SessionSummary /></AuthGate>} />
 
         {/* Catch-all → dashboard */}
         <Route path="*" element={<Navigate to="/" replace />} />
