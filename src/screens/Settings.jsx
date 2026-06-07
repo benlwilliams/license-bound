@@ -4,19 +4,40 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Switch } from '@/components/ui/switch'
 import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
-import { LogOut, Users, FileDown, Upload } from 'lucide-react'
+import { LogOut, Users, FileDown, Upload, RefreshCw } from 'lucide-react'
+import { toast } from 'sonner'
 import useUiStore from '@/store/uiStore'
 import useAuthStore from '@/store/authStore'
 import { signOut } from '@/firebase/auth'
+import { syncPendingSessions } from '@/services/sync'
+import { db as offlineDB } from '@/db/offlineDB'
 
 export default function Settings() {
   const navigate = useNavigate()
   const { darkMode, toggleDarkMode } = useUiStore()
-  const { user } = useAuthStore()
+  const { user, familyId } = useAuthStore()
 
   async function handleSignOut() {
     await signOut()
     navigate('/auth')
+  }
+
+  async function handleSync() {
+    if (!familyId) { toast.error('Not signed in'); return }
+    const pending = await offlineDB.sessions.where('syncedToCloud').equals(0).toArray()
+    if (pending.length === 0) { toast.success('Everything is already synced ✓'); return }
+    toast.loading(`Syncing ${pending.length} session${pending.length !== 1 ? 's' : ''}…`, { id: 'sync' })
+    try {
+      await syncPendingSessions(familyId)
+      const stillPending = await offlineDB.sessions.where('syncedToCloud').equals(0).toArray()
+      if (stillPending.length === 0) {
+        toast.success(`All ${pending.length} sessions synced to cloud ✓`, { id: 'sync' })
+      } else {
+        toast.error(`${stillPending.length} sessions still failed — check your connection`, { id: 'sync' })
+      }
+    } catch (err) {
+      toast.error(`Sync failed: ${err.message}`, { id: 'sync' })
+    }
   }
 
   return (
@@ -71,10 +92,16 @@ export default function Settings() {
           {/* Account */}
           <div className="space-y-3">
             <p className="text-xs text-muted-foreground">Signed in as {user?.email}</p>
-            <Button variant="outline" size="sm" onClick={handleSignOut} className="gap-2">
-              <LogOut size={15} />
-              Sign out
-            </Button>
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" onClick={handleSync} className="gap-2">
+                <RefreshCw size={15} />
+                Sync to cloud
+              </Button>
+              <Button variant="outline" size="sm" onClick={handleSignOut} className="gap-2">
+                <LogOut size={15} />
+                Sign out
+              </Button>
+            </div>
           </div>
         </CardContent>
       </Card>

@@ -1,5 +1,6 @@
 import { HashRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { useEffect } from 'react'
+import { Toaster } from '@/components/ui/sonner'
 import useAuthStore from '@/store/authStore'
 import useUiStore from '@/store/uiStore'
 
@@ -47,6 +48,7 @@ export default function Router() {
 
   return (
     <HashRouter>
+      <Toaster position="top-center" richColors />
       <Routes>
         <Route path="/auth" element={<Auth />} />
 
