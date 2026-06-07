@@ -10,12 +10,19 @@ npm run build     # Production build
 npm run lint      # ESLint
 npm run preview   # Preview production build
 
-# Cloud Functions (run from project root)
+# Firebase Cloud Functions (run from project root)
 firebase deploy --only functions   # Deploy/redeploy the parseLogImage function
 firebase emulators:start           # Run functions locally for testing
 ```
 
 No test runner is configured. Logic is verified manually via browser console.
+
+## Deployment
+
+- **Hosting**: Netlify, auto-deploys from GitHub `main` branch. URL: `license-bound.netlify.app`
+- **`netlify.toml`** — defines build command, publish dir (`dist`), and functions dir (`netlify/functions`)
+- **Netlify Functions** — three server-side functions in `netlify/functions/` for iOS PWA auth (see Auth Persistence below). `firebase-admin` is a dependency of `netlify/functions/package.json` only — NOT the root — to keep frontend builds fast. The root `package.json` also includes it as a fallback for Netlify's bundler.
+- **Netlify env vars required**: `VITE_FIREBASE_*` (6 Firebase client config vars) + `FIREBASE_PROJECT_ID`, `FIREBASE_CLIENT_EMAIL`, `FIREBASE_PRIVATE_KEY` (Firebase Admin service account for session cookie functions)
 
 ## Stack
 
@@ -25,6 +32,7 @@ No test runner is configured. Logic is verified manually via browser console.
 - **Zustand** — four stores in `src/store/`: `authStore`, `profileStore`, `sessionStore`, `uiStore`. `profileStore` and `uiStore` use the `persist` middleware (localStorage).
 - **Firebase v12** — modular SDK. `familyId` = Firebase Auth `uid`. All Firestore data lives under `families/{familyId}/{drivers|supervisors|sessions}`. Security rules enforce `request.auth.uid == familyId`. Project ID: `licensebound-87332`.
 - **Firebase Cloud Functions v2** — in `functions/` (Node 20, ESM). One function: `parseLogImage` (httpsCallable). API key stored in `functions/.env` (gitignored), auto-loaded at deploy time — do NOT use Secret Manager. See `functions/index.js`.
+- **Firebase Admin SDK** — used only in `netlify/functions/` for session cookie management. Credentials come from Netlify env vars, NOT from a committed key file.
 - **Anthropic SDK** (`@anthropic-ai/sdk`) — used only inside the Cloud Function. Model: `claude-opus-4-5`. Images sent as `type: "image"` blocks; PDFs sent as `type: "document"` blocks. Responses wrapped in `<sessions></sessions>` tags for reliable JSON extraction.
 - **Dexie.js** — IndexedDB wrapper in `src/db/offlineDB.js`. Booleans must be stored as `0`/`1` (not `true`/`false`) for Dexie indexed `where()` queries — see `syncedToCloud` handling.
 - **HashRouter** — all routes use `/#/path` so the app works offline from cached files.
@@ -33,7 +41,26 @@ No test runner is configured. Logic is verified manually via browser console.
 ## Architecture
 
 ### Data flow
-Screens → Zustand stores → Firebase Firestore (online) / Dexie IndexedDB (offline). The sync service (`src/services/sync.js`) flushes Dexie records with `syncedToCloud === 0` to Firestore when the device reconnects, triggered by `useSyncOnReconnect`.
+Screens → Zustand stores → Firebase Firestore (online) / Dexie IndexedDB (offline). The sync service (`src/services/sync.js`) flushes Dexie records with `syncedToCloud === 0` to Firestore when the device reconnects, triggered by `useSyncOnReconnect`. A manual "Sync to cloud" button in Settings lets the user force a sync with visible feedback.
+
+### Auth persistence (iOS PWA)
+
+iOS Safari aggressively clears PWA storage (IndexedDB, localStorage), logging users out. The solution is server-side session cookies:
+
+1. **Sign-in** (`Auth.jsx`): after Firebase Auth sign-in succeeds, `createServerSession(user)` POSTs the Firebase ID token to `/.netlify/functions/create-session`. The function uses Firebase Admin to create a 14-day `HttpOnly; SameSite=Strict` session cookie on the Netlify domain.
+
+2. **App startup** (`authStore.js`): `onAuthStateChanged` fires. If Firebase finds no session (iOS cleared IndexedDB), the store calls `/.netlify/functions/verify-session`. The function verifies the cookie and returns a Firebase custom token. The client calls `signInWithCustomToken(auth, customToken)`, which triggers `onAuthStateChanged` again with the user.
+
+3. **Sign-out** (`auth.js`): calls `/.netlify/functions/delete-session` to clear the cookie before signing out of Firebase.
+
+4. **Auth initialization**: uses `initializeAuth(app, { persistence: [indexedDBLocalPersistence, browserLocalPersistence] })` — sets persistence synchronously at startup, no async race condition.
+
+5. **Email pre-fill**: on sign-in with Remember Me, email is saved to `localStorage` under key `lb_email` and pre-filled on the auth screen so re-login is fast even if the cookie somehow fails.
+
+**Netlify function files**: `netlify/functions/create-session.mjs`, `verify-session.mjs`, `delete-session.mjs`
+
+### Firestore queries — no composite indexes
+The `getSessions` query uses only `where('driverId', '==', driverId)` with **no `orderBy`**. Adding `orderBy('date')` would require a composite index that doesn't exist and would cause silent query failures (falling back to local Dexie). All sorting is done client-side in `SessionHistory.jsx`.
 
 ### The two driving logs
 The Texas DPS program has **two completely separate logs** — they never share credit:
@@ -55,7 +82,7 @@ Every session has exactly one `logType`. The `totalMinutes` field records the fu
 | `/profiles` | `Profiles` | Manage drivers and supervisors |
 | `/readiness` | `RoadTestReadiness` | Road test eligibility checklist |
 | `/export` | `PDFExport` | Print/save DL-91B and 30-hr PDF reports |
-| `/settings` | `Settings` | App settings, dark mode, import, export |
+| `/settings` | `Settings` | App settings, dark mode, sync, import, export, sign out |
 | `/import` | `LogImport` | Photo/PDF import of paper logs via Claude Vision |
 
 ### Paper log import flow (`LogImport.jsx`)
