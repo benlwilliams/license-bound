@@ -9,6 +9,7 @@ import { LOG_TYPE_LABELS } from '@/utils/constants'
 import { formatElapsed, dayKey } from '@/utils/dateTime'
 import { getDailyRemainingMinutes } from '@/services/capRules'
 import useSessionStore from '@/store/sessionStore'
+import DriveAnimation from '@/components/common/DriveAnimation'
 
 export default function LiveSession() {
   const navigate = useNavigate()
@@ -114,14 +115,17 @@ export default function LiveSession() {
         )}
       </div>
 
-      {/* ── Timer ── */}
-      <div className="flex flex-col items-center gap-3">
+      {/* ── Timer + animation ── */}
+      <div className="flex flex-col items-center gap-4 w-full">
         <p className="text-7xl font-mono font-bold tracking-tight tabular-nums select-none">
           {formatElapsed(elapsed)}
         </p>
         <p className="text-sm text-muted-foreground">
           {paused ? 'Session paused' : 'Session in progress'}
         </p>
+        <div className="w-full" style={{ opacity: paused ? 0.45 : 1, transition: 'opacity 0.4s' }}>
+          <DriveAnimation paused={paused} />
+        </div>
       </div>
 
       {/* ── Controls ── */}
