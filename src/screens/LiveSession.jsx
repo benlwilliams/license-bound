@@ -97,10 +97,8 @@ export default function LiveSession() {
     })
   }
 
-  const hasMinTime = elapsed >= 60000
-
   return (
-    <div className="flex flex-col items-center justify-between min-h-svh bg-background px-4 py-safe">
+    <div className="flex flex-col items-center justify-between h-svh bg-background px-4 py-safe">
 
       {/* ── Top bar ── */}
       <div className="w-full flex items-center justify-between pt-4 pb-2">
@@ -142,8 +140,6 @@ export default function LiveSession() {
           variant="destructive"
           className="flex-1 gap-2"
           onClick={handleEnd}
-          disabled={!hasMinTime}
-          title={!hasMinTime ? 'Drive at least 1 minute to end' : undefined}
         >
           <Square size={18} fill="currentColor" />
           End session
