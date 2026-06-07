@@ -402,8 +402,7 @@ function SessionReviewCard({
       countedMinutes,
       nightMinutes,
       isNightSession: nightMinutes > 0,
-      gpsRoute: [],
-      hasGPS: false,
+
       isManualEntry: true,
       syncedToCloud: false,
       createdAt: new Date().toISOString(),

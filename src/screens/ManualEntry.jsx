@@ -121,8 +121,7 @@ export default function ManualEntry() {
         nightMinutes: preview.nightMinutes,
         isNightSession: preview.nightMinutes > 0,
         city: values.city,
-        gpsRoute: editing?.gpsRoute ?? [],
-        hasGPS: false,
+
         isManualEntry: true,
         sunsetTime: null,
         sunriseTime: null,

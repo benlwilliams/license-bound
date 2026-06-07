@@ -34,7 +34,3 @@ export const MIN_CALENDAR_DAYS = 44
 // Expiration warning threshold
 export const LICENSE_EXPIRY_WARNING_DAYS = 60
 
-// GPS sampling interval in milliseconds
-export const GPS_SAMPLE_INTERVAL_MS = 5000           // every 5 seconds
-// Downsample threshold — beyond this many points, sample every 15s instead
-export const GPS_DOWNSAMPLE_THRESHOLD = 720

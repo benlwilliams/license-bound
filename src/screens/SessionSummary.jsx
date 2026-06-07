@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
-import { Clock, Moon, MapPin, Check, X } from 'lucide-react'
+import { Clock, Moon, Check, X } from 'lucide-react'
 import { toast } from 'sonner'
 import useAuthStore from '@/store/authStore'
 import useProfileStore from '@/store/profileStore'
@@ -64,7 +64,7 @@ export default function SessionSummary() {
     return null
   }
 
-  const { config, startMs, endMs, totalMinutes, route } = data
+  const { config, startMs, endMs, totalMinutes } = data
   const driver = drivers.find(d => d.id === config.driverId)
   const supervisor = supervisors.find(s => s.id === config.supervisorId)
 
@@ -83,8 +83,6 @@ export default function SessionSummary() {
         nightMinutes: summary.nightMinutes,
         isNightSession: summary.nightMinutes > 0,
         city: config.city ?? '',
-        gpsRoute: route ?? [],
-        hasGPS: (route?.length ?? 0) > 0,
         isManualEntry: false,
         sunsetTime: null,
         sunriseTime: null,
@@ -158,14 +156,6 @@ export default function SessionSummary() {
             </div>
           )}
 
-          {(route?.length ?? 0) > 0 && (
-            <div className="flex items-center justify-between text-sm">
-              <span className="flex items-center gap-1.5 text-muted-foreground">
-                <MapPin size={14} /> GPS points
-              </span>
-              <span className="font-medium">{route.length} recorded</span>
-            </div>
-          )}
         </CardContent>
       </Card>
 
