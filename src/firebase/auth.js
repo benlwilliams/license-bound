@@ -6,15 +6,19 @@ import {
   onAuthStateChanged,
   sendPasswordResetEmail,
   setPersistence,
+  indexedDBLocalPersistence,
   browserLocalPersistence,
 } from 'firebase/auth'
 import { app } from './config'
 
 export const auth = getAuth(app)
-export { setPersistence, browserLocalPersistence }
+export { setPersistence, indexedDBLocalPersistence, browserLocalPersistence }
 
-// Default to LOCAL persistence so users stay logged in across sessions
-setPersistence(auth, browserLocalPersistence)
+// Request persistent storage from the browser (prevents iOS from clearing PWA data)
+navigator.storage?.persist?.()
+
+// Use IndexedDB persistence — more reliable than localStorage for PWAs on iOS
+setPersistence(auth, indexedDBLocalPersistence)
 
 export function signUp(email, password) {
   return createUserWithEmailAndPassword(auth, email, password)

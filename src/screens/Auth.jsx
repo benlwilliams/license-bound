@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { setPersistence, browserLocalPersistence, browserSessionPersistence } from 'firebase/auth'
-import { auth, signIn, signUp, resetPassword } from '@/firebase/auth'
+import { setPersistence, browserSessionPersistence } from 'firebase/auth'
+import { auth, signIn, signUp, resetPassword, indexedDBLocalPersistence } from '@/firebase/auth'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -36,7 +36,7 @@ export default function Auth() {
     try {
       const cred = await navigator.credentials.get({ password: true, mediation: 'required' })
       if (cred) {
-        await setPersistence(auth, browserLocalPersistence)
+        await setPersistence(auth, indexedDBLocalPersistence)
         await signIn(cred.id, cred.password)
         navigate('/')
       }
@@ -53,7 +53,7 @@ export default function Auth() {
     setLoading(true)
 
     try {
-      const persistence = rememberMe ? browserLocalPersistence : browserSessionPersistence
+      const persistence = rememberMe ? indexedDBLocalPersistence : browserSessionPersistence
       await setPersistence(auth, persistence)
 
       if (mode === 'signin') {
