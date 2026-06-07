@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { auth, signIn, signUp, resetPassword, setPersistence, browserSessionPersistence } from '@/firebase/auth'
 import { Button } from '@/components/ui/button'
@@ -41,6 +41,8 @@ export default function Auth() {
   const [loading, setLoading] = useState(false)
   const [resetSent, setResetSent] = useState(false)
   const [biometricAvailable, setBiometricAvailable] = useState(false)
+  const emailRef = useRef(null)
+  const passwordRef = useRef(null)
 
   // Check silently for saved credentials on sign-in screen (Android Chrome only)
   useEffect(() => {
@@ -74,38 +76,43 @@ export default function Auth() {
     setError('')
     setLoading(true)
 
+    // Read directly from DOM so iOS autofill (which bypasses React state) is captured
+    const emailValue = (emailRef.current?.value || email).trim()
+    const passwordValue = passwordRef.current?.value || password
+
     try {
       if (mode === 'signin') {
         // Only switch to session-only storage when the user explicitly unchecks remember me
         if (!rememberMe) await setPersistence(auth, browserSessionPersistence)
 
-        const { user } = await signIn(email, password)
+        const { user } = await signIn(emailValue, passwordValue)
 
         if (rememberMe) {
-          localStorage.setItem(EMAIL_KEY, email)
+          localStorage.setItem(EMAIL_KEY, emailValue)
           await createServerSession(user)
         }
 
         if (rememberMe && CRED_API) {
           try {
-            const cred = new window.PasswordCredential({ id: email, password })
+            const cred = new window.PasswordCredential({ id: emailValue, password: passwordValue })
             await navigator.credentials.store(cred)
           } catch {}
         }
 
-        navigate('/')
+        // Full-page redirect so iOS detects the post-login navigation and offers to save the password
+        window.location.replace('/')
       } else if (mode === 'signup') {
-        const { user } = await signUp(email, password)
-        localStorage.setItem(EMAIL_KEY, email)
+        const { user } = await signUp(emailValue, passwordValue)
+        localStorage.setItem(EMAIL_KEY, emailValue)
         await createServerSession(user)
-        navigate('/')
+        window.location.replace('/')
       } else if (mode === 'reset') {
-        await resetPassword(email)
+        await resetPassword(emailValue)
         setResetSent(true)
+        setLoading(false)
       }
     } catch (err) {
       setError(friendlyError(err.code))
-    } finally {
       setLoading(false)
     }
   }
@@ -165,6 +172,7 @@ export default function Auth() {
                 <div className="space-y-1.5">
                   <Label htmlFor="email">Email</Label>
                   <Input
+                    ref={emailRef}
                     id="email"
                     type="email"
                     autoComplete="username"
@@ -179,6 +187,7 @@ export default function Auth() {
                   <div className="space-y-1.5">
                     <Label htmlFor="password">Password</Label>
                     <Input
+                      ref={passwordRef}
                       id="password"
                       type="password"
                       autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
@@ -186,7 +195,7 @@ export default function Auth() {
                       onChange={e => setPassword(e.target.value)}
                       required
                       minLength={6}
-                      placeholder="••••••••"
+                      placeholder=""
                     />
                   </div>
                 )}
