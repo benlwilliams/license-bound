@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Car, Fingerprint } from 'lucide-react'
+import { toast } from 'sonner'
 
 const CRED_API = typeof window !== 'undefined' && 'PasswordCredential' in window
 const EMAIL_KEY = 'lb_email'
@@ -13,13 +14,19 @@ const EMAIL_KEY = 'lb_email'
 async function createServerSession(user) {
   try {
     const idToken = await user.getIdToken()
-    await fetch('/.netlify/functions/create-session', {
+    const res = await fetch('/.netlify/functions/create-session', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ idToken }),
     })
-  } catch {
-    // Non-fatal: Firebase Auth still works, cookie is just a backup
+    if (res.ok) {
+      toast.success('Session saved ✓')
+    } else {
+      const body = await res.text()
+      toast.error(`Session failed: ${res.status} — ${body}`)
+    }
+  } catch (err) {
+    toast.error(`Session error: ${err.message}`)
   }
 }
 
