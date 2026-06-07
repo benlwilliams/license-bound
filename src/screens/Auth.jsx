@@ -178,7 +178,8 @@ export default function Auth() {
                     ref={emailRef}
                     id="email"
                     name="email"
-                    type="email"
+                    type="text"
+                    inputMode="email"
                     autoComplete="username"
                     value={email}
                     onChange={e => setEmail(e.target.value)}
