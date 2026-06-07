@@ -68,11 +68,12 @@ export async function deleteSupervisor(familyId, supervisorId) {
 
 export async function getSessions(familyId, driverId) {
   const col = familyCol(familyId, 'sessions')
+  // No orderBy — avoids a composite index requirement. Sorting is done client-side.
   const q = driverId
-    ? query(col, where('driverId', '==', driverId), orderBy('date', 'desc'))
-    : query(col, orderBy('date', 'desc'))
+    ? query(col, where('driverId', '==', driverId))
+    : query(col)
   const snap = await getDocs(q)
-  return snap.docs.map(d => ({ id: d.id, ...d.data() }))
+  return snap.docs.map(d => ({ ...d.data(), sessionId: d.id }))
 }
 
 export async function saveSession(familyId, session) {
