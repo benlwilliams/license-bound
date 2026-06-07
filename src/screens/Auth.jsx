@@ -20,14 +20,21 @@ async function createServerSession(user) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ idToken }),
     })
-    if (res.ok) {
-      toast.success('Session saved ✓')
-    } else {
+    if (!res.ok) {
       const body = await res.text()
-      toast.error(`Session failed: ${res.status} — ${body}`)
+      toast.error(`Session failed: ${res.status} — ${body}`, { duration: 6000 })
+      return
+    }
+    // Immediately verify the cookie was stored and will be sent back on future requests
+    const verifyRes = await fetch('/.netlify/functions/verify-session', { credentials: 'include' })
+    if (verifyRes.ok) {
+      toast.success('Session cookie verified ✓')
+    } else {
+      const body = await verifyRes.json().catch(() => ({}))
+      toast.error(`Cookie not readable after save: ${body.error ?? verifyRes.status}`, { duration: 8000 })
     }
   } catch (err) {
-    toast.error(`Session error: ${err.message}`)
+    toast.error(`Session error: ${err.message}`, { duration: 6000 })
   }
 }
 
@@ -174,6 +181,7 @@ export default function Auth() {
                   <Input
                     ref={emailRef}
                     id="email"
+                    name="email"
                     type="email"
                     autoComplete="username"
                     value={email}
@@ -189,6 +197,7 @@ export default function Auth() {
                     <Input
                       ref={passwordRef}
                       id="password"
+                      name="password"
                       type="password"
                       autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
                       value={password}
