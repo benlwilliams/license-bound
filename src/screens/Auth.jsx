@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { setPersistence, browserSessionPersistence } from 'firebase/auth'
-import { auth, signIn, signUp, resetPassword, indexedDBLocalPersistence } from '@/firebase/auth'
+import { auth, signIn, signUp, resetPassword, setPersistence, indexedDBLocalPersistence, browserSessionPersistence } from '@/firebase/auth'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
