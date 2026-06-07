@@ -16,6 +16,7 @@ async function createServerSession(user) {
     const idToken = await user.getIdToken()
     const res = await fetch('/.netlify/functions/create-session', {
       method: 'POST',
+      credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ idToken }),
     })
@@ -166,7 +167,7 @@ export default function Auth() {
                   <Input
                     id="email"
                     type="email"
-                    autoComplete="email"
+                    autoComplete="username"
                     value={email}
                     onChange={e => setEmail(e.target.value)}
                     required

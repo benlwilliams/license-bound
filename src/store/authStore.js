@@ -19,15 +19,19 @@ const useAuthStore = create((set) => ({
       if (!cookieTried) {
         cookieTried = true
         try {
-          const res = await fetch('/.netlify/functions/verify-session')
+          const res = await fetch('/.netlify/functions/verify-session', { credentials: 'include' })
           if (res.ok) {
             const { customToken } = await res.json()
             // Signing in triggers onAuthStateChanged again with the user
             await signInWithCustomToken(auth, customToken)
             return
+          } else {
+            const body = await res.json().catch(() => ({}))
+            console.warn('[LicenseBound] verify-session failed', res.status, body)
           }
-        } catch {
+        } catch (err) {
           // Network error or function not available (dev mode) — fall through
+          console.warn('[LicenseBound] verify-session error', err.message)
         }
       }
 

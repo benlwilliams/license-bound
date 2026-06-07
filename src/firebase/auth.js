@@ -34,7 +34,7 @@ export function signIn(email, password) {
 
 export async function signOut() {
   // Clear server-side session cookie so iOS can't restore a stale session
-  fetch('/.netlify/functions/delete-session', { method: 'POST' }).catch(() => {})
+  fetch('/.netlify/functions/delete-session', { method: 'POST', credentials: 'include' }).catch(() => {})
   return firebaseSignOut(auth)
 }
 
