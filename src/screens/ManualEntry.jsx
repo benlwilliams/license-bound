@@ -278,7 +278,7 @@ export default function ManualEntry() {
         <>
           <Separator />
           <Card className="bg-muted/50">
-            <CardContent className="py-3 px-4 space-y-2">
+            <CardContent className="space-y-2">
               <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Preview</p>
 
               <div className="flex items-center justify-between">

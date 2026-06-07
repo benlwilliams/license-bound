@@ -99,7 +99,7 @@ export default function SessionDetail() {
 
       {/* Time details */}
       <Card>
-        <CardContent className="py-3 px-4 space-y-3">
+        <CardContent className="space-y-3">
           <DetailRow
             icon={<Clock size={15} className="text-muted-foreground" />}
             label="Drive window"
@@ -143,7 +143,7 @@ export default function SessionDetail() {
 
       {/* People */}
       <Card>
-        <CardContent className="py-3 px-4 space-y-3">
+        <CardContent className="space-y-3">
           {driver && (
             <DetailRow
               icon={<User size={15} className="text-muted-foreground" />}

@@ -19,7 +19,7 @@ export default function DriverCard({ driver, selected, onSelect, onEdit, onDelet
       className={`cursor-pointer transition-colors ${selected ? 'ring-2 ring-primary' : ''}`}
       onClick={onSelect}
     >
-      <CardContent className="py-3 px-4">
+      <CardContent>
         <div className="flex items-start justify-between gap-2">
           <div className="flex items-center gap-2 min-w-0">
             {selected && <CheckCircle2 size={16} className="text-primary shrink-0" />}

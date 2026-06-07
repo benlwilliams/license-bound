@@ -97,6 +97,8 @@ const useProfileStore = create(
     {
       name: 'licensebound-profiles',
       partialize: (state) => ({
+        drivers: state.drivers,
+        supervisors: state.supervisors,
         selectedDriverId: state.selectedDriverId,
         selectedSupervisorId: state.selectedSupervisorId,
       }),

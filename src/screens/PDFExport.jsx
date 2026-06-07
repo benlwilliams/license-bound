@@ -365,7 +365,7 @@ export default function PDFExport() {
 
       {/* Preview card */}
       <Card>
-        <CardContent className="py-4 space-y-3">
+        <CardContent className="space-y-3">
           <div>
             <p className="font-medium">{driver.fullName}</p>
             <p className="text-xs text-muted-foreground">License: {driver.licenseNumber}</p>

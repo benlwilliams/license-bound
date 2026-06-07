@@ -105,7 +105,7 @@ export default function RoadTestReadiness() {
 
       {/* ── 44-Day Minimum ── */}
       <Card>
-        <CardContent className="py-3 px-4">
+        <CardContent>
           <div className="flex items-start justify-between gap-3">
             <div className="flex items-start gap-2 min-w-0">
               {calendarDaysMet
@@ -179,7 +179,7 @@ function StatusBanner({ icon, color, title, subtitle }) {
 function Section({ title, subtitle, children }) {
   return (
     <Card>
-      <CardContent className="py-3 px-4 space-y-3">
+      <CardContent className="space-y-3">
         <div>
           <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{title}</p>
           {subtitle && <p className="text-xs text-muted-foreground mt-0.5">{subtitle}</p>}

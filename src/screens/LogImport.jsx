@@ -441,7 +441,7 @@ function SessionReviewCard({
       </div>
 
       <Card className={cn(isAmber && 'ring-1 ring-amber-400 dark:ring-amber-500')}>
-        <CardContent className="py-4 px-4 space-y-4">
+        <CardContent className="space-y-4">
 
           {/* Confidence / issues banner */}
           {(confidenceLabel || extracted.issues) && (

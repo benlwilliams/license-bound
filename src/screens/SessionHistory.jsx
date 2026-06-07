@@ -96,7 +96,7 @@ export default function SessionHistory() {
 function SessionRow({ session, onClick }) {
   return (
     <Card className="cursor-pointer active:opacity-75 transition-opacity" onClick={onClick}>
-      <CardContent className="py-3 px-4">
+      <CardContent>
         <div className="flex items-center justify-between gap-2">
           <div className="min-w-0 space-y-1 flex-1">
             <div className="flex items-center gap-2 flex-wrap">

@@ -116,7 +116,7 @@ export default function SessionSummary() {
 
       {/* Session details */}
       <Card>
-        <CardContent className="py-3 px-4 space-y-2.5">
+        <CardContent className="space-y-2.5">
           <div className="flex items-center justify-between text-sm">
             <span className="flex items-center gap-1.5 text-muted-foreground">
               <Clock size={14} /> Drive window

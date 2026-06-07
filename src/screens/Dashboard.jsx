@@ -1,9 +1,10 @@
-import { useEffect, useMemo } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
-import { Play, PenLine, Moon, Calendar, TrendingUp } from 'lucide-react'
+import { Play, PenLine, Moon, Calendar, TrendingUp, ChevronDown } from 'lucide-react'
 import useAuthStore from '@/store/authStore'
 import useProfileStore from '@/store/profileStore'
 import useSessionStore from '@/store/sessionStore'
@@ -43,6 +44,27 @@ export default function Dashboard() {
   const dl91bInstrRemainingToday = Math.max(0, DL91B_DAILY_INSTRUCTION_MAX - todayUsage.dl91bInstr)
   const thirtyHrRemainingToday = Math.max(0, THIRTY_HR_DAILY_MAX_MINUTES - todayUsage.thirtyHrToday)
 
+  const isDl91bComplete = progress.dl91bObsFrac >= 1 && progress.dl91bInstrFrac >= 1
+  const isThirtyHrComplete = progress.thirtyHrFrac >= 1 && progress.nightHrsFrac >= 1
+
+  const [dl91bOpen, setDl91bOpen] = useState(true)
+  const [thirtyHrOpen, setThirtyHrOpen] = useState(true)
+  const autoCollapsed = useRef({ dl91b: false, thirtyHr: false })
+
+  useEffect(() => {
+    if (isDl91bComplete && !autoCollapsed.current.dl91b) {
+      autoCollapsed.current.dl91b = true
+      setDl91bOpen(false)
+    }
+  }, [isDl91bComplete])
+
+  useEffect(() => {
+    if (isThirtyHrComplete && !autoCollapsed.current.thirtyHr) {
+      autoCollapsed.current.thirtyHr = true
+      setThirtyHrOpen(false)
+    }
+  }, [isThirtyHrComplete])
+
   if (!hasProfiles) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] px-6 text-center gap-4">
@@ -67,69 +89,115 @@ export default function Dashboard() {
 
       {/* ── DL-91B Log ── */}
       <Card>
-        <CardContent className="pt-4 pb-4 space-y-3">
-          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-            DL-91B Log
-          </p>
+        <CardContent className="space-y-3">
+          <button
+            className="w-full flex items-center justify-between"
+            onClick={() => isDl91bComplete && setDl91bOpen(o => !o)}
+            style={{ cursor: isDl91bComplete ? 'pointer' : 'default' }}
+          >
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              DL-91B Log
+            </p>
+            {isDl91bComplete && (
+              <div className="flex items-center gap-2">
+                {!dl91bOpen && (
+                  <Badge className="bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300 border-0 text-xs">
+                    Completed
+                  </Badge>
+                )}
+                <ChevronDown
+                  size={16}
+                  className={`text-muted-foreground transition-transform duration-200 ${dl91bOpen ? 'rotate-180' : ''}`}
+                />
+              </div>
+            )}
+          </button>
 
-          <div className="grid grid-cols-2 gap-4">
-            <RingCell
-              label="Observation"
-              value={progress.dl91bObs}
-              max={progress.dl91bObsTarget}
-              frac={progress.dl91bObsFrac}
-              color="#3b82f6"
-            />
-            <RingCell
-              label="Instruction"
-              value={progress.dl91bInstr}
-              max={progress.dl91bInstrTarget}
-              frac={progress.dl91bInstrFrac}
-              color="#8b5cf6"
-            />
-          </div>
+          {dl91bOpen && (
+            <>
+              <div className="grid grid-cols-2 gap-4">
+                <RingCell
+                  label="Observation"
+                  value={progress.dl91bObs}
+                  max={progress.dl91bObsTarget}
+                  frac={progress.dl91bObsFrac}
+                  color="#3b82f6"
+                />
+                <RingCell
+                  label="Instruction"
+                  value={progress.dl91bInstr}
+                  max={progress.dl91bInstrTarget}
+                  frac={progress.dl91bInstrFrac}
+                  color="#8b5cf6"
+                />
+              </div>
 
-          <DailyCapRow items={[
-            { label: 'Combined today', remaining: dl91bRemainingToday, max: DL91B_DAILY_MAX_MINUTES },
-            { label: 'Instruction', remaining: dl91bInstrRemainingToday, max: DL91B_DAILY_INSTRUCTION_MAX },
-          ]} />
+              <DailyCapRow items={[
+                { label: 'Combined today', remaining: dl91bRemainingToday, max: DL91B_DAILY_MAX_MINUTES },
+                { label: 'Instruction', remaining: dl91bInstrRemainingToday, max: DL91B_DAILY_INSTRUCTION_MAX },
+              ]} />
+            </>
+          )}
         </CardContent>
       </Card>
 
       {/* ── 30-Hour Practice ── */}
       <Card>
-        <CardContent className="pt-4 pb-4 space-y-3">
-          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-            30-Hour Practice
-          </p>
+        <CardContent className="space-y-3">
+          <button
+            className="w-full flex items-center justify-between"
+            onClick={() => isThirtyHrComplete && setThirtyHrOpen(o => !o)}
+            style={{ cursor: isThirtyHrComplete ? 'pointer' : 'default' }}
+          >
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              30-Hour Practice
+            </p>
+            {isThirtyHrComplete && (
+              <div className="flex items-center gap-2">
+                {!thirtyHrOpen && (
+                  <Badge className="bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300 border-0 text-xs">
+                    Completed
+                  </Badge>
+                )}
+                <ChevronDown
+                  size={16}
+                  className={`text-muted-foreground transition-transform duration-200 ${thirtyHrOpen ? 'rotate-180' : ''}`}
+                />
+              </div>
+            )}
+          </button>
 
-          <div className="grid grid-cols-2 gap-4">
-            <RingCell
-              label="Practice hours"
-              value={progress.thirtyHr}
-              max={progress.thirtyHrTarget}
-              frac={progress.thirtyHrFrac}
-              color="#22c55e"
-            />
-            <RingCell
-              label="Night hours"
-              value={progress.nightHrs}
-              max={progress.nightHrsTarget}
-              frac={progress.nightHrsFrac}
-              color="#6366f1"
-              icon={<Moon size={10} className="text-indigo-400 mb-0.5" />}
-            />
-          </div>
+          {thirtyHrOpen && (
+            <>
+              <div className="grid grid-cols-2 gap-4">
+                <RingCell
+                  label="Practice hours"
+                  value={progress.thirtyHr}
+                  max={progress.thirtyHrTarget}
+                  frac={progress.thirtyHrFrac}
+                  color="#22c55e"
+                />
+                <RingCell
+                  label="Night hours"
+                  value={progress.nightHrs}
+                  max={progress.nightHrsTarget}
+                  frac={progress.nightHrsFrac}
+                  color="#6366f1"
+                  icon={<Moon size={10} className="text-indigo-400 mb-0.5" />}
+                />
+              </div>
 
-          <DailyCapRow items={[
-            { label: "Today's Driving Time Allowed", remaining: thirtyHrRemainingToday, max: THIRTY_HR_DAILY_MAX_MINUTES },
-          ]} />
+              <DailyCapRow items={[
+                { label: "Today's Driving Time Allowed", remaining: thirtyHrRemainingToday, max: THIRTY_HR_DAILY_MAX_MINUTES },
+              ]} />
+            </>
+          )}
         </CardContent>
       </Card>
 
       {/* ── Road Test Projection ── */}
       <Card>
-        <CardContent className="pt-4 pb-4 space-y-2.5">
+        <CardContent className="space-y-2.5">
           <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
             Road Test
           </p>

@@ -60,7 +60,7 @@ export default function Settings() {
       </header>
 
       <Card>
-        <CardContent className="py-4 space-y-4">
+        <CardContent className="space-y-4">
           {/* Dark mode */}
           <div className="flex items-center justify-between">
             <Label htmlFor="dark-mode" className="text-base cursor-pointer">Dark mode</Label>
