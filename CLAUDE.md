@@ -65,7 +65,7 @@ The `getSessions` query uses only `where('driverId', '==', driverId)` with **no 
 ### The two driving logs
 The Texas DPS program has **two completely separate logs** — they never share credit:
 - **DL-91B** (`dl91b-observation` | `dl91b-instruction`): 14 hours total with the licensed parent instructor. Daily cap: 4 hrs total, 2 hrs instruction.
-- **30-Hour Practice** (`practice-30hr`): 30 hours with any qualified adult 21+, at least 10 hrs at night. Daily cap: 2 hrs.
+- **30-Hour Practice** (`practice-30hr`): 30 hours with any qualified adult 21+, at least 10 hrs at night. Daily cap: 1 hr.
 
 Every session has exactly one `logType`. The `totalMinutes` field records the full drive duration; `countedMinutes` records how much counts toward the log after the daily cap is applied.
 
@@ -77,7 +77,7 @@ Every session has exactly one `logType`. The `totalMinutes` field records the fu
 | `/session-detail` | `SessionDetail` | View/edit/delete a single session |
 | `/manual-entry` | `ManualEntry` | Manual session entry form |
 | `/session/pre` | `PreSession` | Pre-drive checklist + supervisor select |
-| `/session/live` | `LiveSession` | GPS tracking during active drive |
+| `/session/live` | `LiveSession` | Timer during active drive (full-screen, no nav bar) |
 | `/session/summary` | `SessionSummary` | Post-drive summary + save |
 | `/profiles` | `Profiles` | Manage drivers and supervisors |
 | `/readiness` | `RoadTestReadiness` | Road test eligibility checklist |
@@ -116,7 +116,6 @@ Day Hours per row = `totalMinutes − nightMinutes`. These columns are the sourc
   totalMinutes,      // full drive duration
   countedMinutes,    // after daily cap — this is what progress tracking uses
   nightMinutes,      // practice-30hr only
-  gpsRoute,          // [{lat, lng, timestamp}, ...] — empty array for manual entries
   syncedToCloud,     // boolean (0/1 in Dexie, boolean in Firestore)
 }
 ```
