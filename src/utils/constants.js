@@ -17,7 +17,7 @@ export const DL91B_OBSERVATION_TARGET = 7 * 60       // 7 hours total target
 export const DL91B_INSTRUCTION_TARGET = 7 * 60       // 7 hours total target
 
 // 30-Hour log caps
-export const THIRTY_HR_DAILY_MAX_MINUTES = 2 * 60    // 2 hours per day
+export const THIRTY_HR_DAILY_MAX_MINUTES = 1 * 60    // 1 hour per day
 export const THIRTY_HR_TARGET = 30 * 60              // 30 hours total target
 export const THIRTY_HR_NIGHT_TARGET = 10 * 60        // 10 hours night minimum
 
