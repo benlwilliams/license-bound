@@ -76,8 +76,8 @@ Every session has exactly one `logType`. The `totalMinutes` field records the fu
 | `/history` | `SessionHistory` | Filterable session list |
 | `/session-detail` | `SessionDetail` | View/edit/delete a single session |
 | `/manual-entry` | `ManualEntry` | Manual session entry form |
-| `/session/pre` | `PreSession` | Pre-drive checklist + supervisor select |
-| `/session/live` | `LiveSession` | Timer during active drive (full-screen, no nav bar) |
+| `/session/pre` | `PreSession` | Pre-drive checklist + supervisor select; blocks start if daily cap already reached |
+| `/session/live` | `LiveSession` | Timer during active drive (inside AppShell — has nav bar) |
 | `/session/summary` | `SessionSummary` | Post-drive summary + save |
 | `/profiles` | `Profiles` | Manage drivers and supervisors |
 | `/readiness` | `RoadTestReadiness` | Road test eligibility checklist |
@@ -95,7 +95,7 @@ Phase state machine: `upload` → `analyzing` → `review` → `done`.
 5. Each confirmed session runs through `calcCountedMinutes` (same cap logic as ManualEntry) before calling `sessionStore.saveSession()`. Because Zustand updates optimistically, same-day cap calculations are correct even when importing multiple sessions on the same date.
 
 ### Calculation engine (`src/services/`)
-- `capRules.js` — `calcCountedMinutes(newSession, todaysSessions)` applies the correct daily cap given a session's logType and what's already been logged that day. `recalcDaySessions()` recomputes the whole day when a session is edited or deleted.
+- `capRules.js` — `calcCountedMinutes(newSession, todaysSessions)` applies the correct daily cap given a session's logType and what's already been logged that day. `recalcDaySessions()` recomputes the whole day when a session is edited or deleted. `getDailyRemainingMinutes(logType, todaysSessions)` is also used by `PreSession` to block starting a session when the cap is already reached.
 - `progress.js` — `getProgress(sessions)` aggregates all sessions into progress fractions. `getPaceProjection()` uses a 14-day rolling average. `earliestTestDate` is always 44 calendar days from the driver's first-ever session.
 - `nightHours.js` — `calcNightMinutes(dateStr, lat, lng, startMs, endMs)` returns the overlap between a drive and the night window (30 min after sunset → 30 min before sunrise). Only applied to `practice-30hr` sessions. Pass noon as the SunCalc reference time to avoid timezone boundary bugs.
 
