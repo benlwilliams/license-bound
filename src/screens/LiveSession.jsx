@@ -67,7 +67,8 @@ export default function LiveSession() {
     if (elapsed >= capRemainingMs) {
       toast.info('Daily limit reached — session ended automatically')
       const endMs = Date.now()
-      const totalMinutes = Math.max(1, Math.round(elapsed / 60000))
+      // Use the cap value directly — rounding elapsed can overshoot by a minute
+      const totalMinutes = Math.max(1, capRemainingMs / 60000)
       clearActiveSession()
       navigate('/session/summary', {
         state: { config, startMs: sessionStartedAt, endMs, totalMinutes },
@@ -98,7 +99,7 @@ export default function LiveSession() {
   }
 
   return (
-    <div className="flex flex-col items-center justify-between h-svh bg-background px-4 py-safe">
+    <div className="flex flex-col items-center justify-between min-h-[calc(100svh-5rem)] bg-background px-4 py-safe">
 
       {/* ── Top bar ── */}
       <div className="w-full flex items-center justify-between pt-4 pb-2">
