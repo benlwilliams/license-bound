@@ -95,3 +95,24 @@ export async function updateSession(familyId, sessionId, updates) {
 export async function deleteSession(familyId, sessionId) {
   await deleteDoc(familyDoc(familyId, 'sessions', sessionId))
 }
+
+// ── Active session (crash/standby recovery) ───────────────────────────────────
+// Stored at families/{familyId}/active_session/current.
+// Written when a live session starts; deleted when it ends.
+// On app restart, AppShell checks this doc and resumes the session.
+
+export async function saveActiveSession(familyId, sessionData) {
+  const ref = doc(db, 'families', familyId, 'active_session', 'current')
+  await setDoc(ref, sessionData)
+}
+
+export async function getActiveSession(familyId) {
+  const ref = doc(db, 'families', familyId, 'active_session', 'current')
+  const snap = await getDoc(ref)
+  return snap.exists() ? snap.data() : null
+}
+
+export async function deleteActiveSession(familyId) {
+  const ref = doc(db, 'families', familyId, 'active_session', 'current')
+  await deleteDoc(ref)
+}

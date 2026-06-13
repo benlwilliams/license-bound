@@ -9,11 +9,17 @@ import { LOG_TYPE_LABELS } from '@/utils/constants'
 import { formatElapsed, dayKey } from '@/utils/dateTime'
 import { getDailyRemainingMinutes } from '@/services/capRules'
 import useSessionStore from '@/store/sessionStore'
+import useAuthStore from '@/store/authStore'
+import {
+  saveActiveSession,
+  deleteActiveSession,
+} from '@/firebase/firestore'
 
 export default function LiveSession() {
   const navigate = useNavigate()
   const location = useLocation()
   const { activeSession, startActiveSession, updateActiveSession, clearActiveSession, getSessionsForDriver } = useSessionStore()
+  const { familyId } = useAuthStore()
 
   const mountTimeRef = useRef(Date.now())
   const incomingConfig = location.state
@@ -23,9 +29,13 @@ export default function LiveSession() {
       const ageMs = Date.now() - (activeSession.startedAt ?? 0)
       if (ageMs > 4 * 60 * 60 * 1000) {
         clearActiveSession()
+        deleteActiveSession(familyId).catch(() => {})
         navigate('/session/pre', { replace: true })
         return
       }
+      // Recovered from localStorage or cloud — ensure cloud backup is current
+      saveActiveSession(familyId, activeSession).catch(() => {})
+      return
     }
 
     if (incomingConfig) {
@@ -34,14 +44,16 @@ export default function LiveSession() {
       const todaysSessions = getSessionsForDriver(incomingConfig.driverId)
         .filter(s => s.date === today)
       const capRemainingMs = getDailyRemainingMinutes(incomingConfig.logType, todaysSessions) * 60000
-      startActiveSession({
+      const sessionState = {
         config: incomingConfig,
         startedAt: now,
         effectiveStartTime: now,
         paused: false,
         pausedElapsed: 0,
         capRemainingMs,
-      })
+      }
+      startActiveSession(sessionState)
+      saveActiveSession(familyId, sessionState).catch(() => {})
     } else if (!activeSession) {
       navigate('/session/pre', { replace: true })
     }
@@ -52,7 +64,14 @@ export default function LiveSession() {
   const effectiveStartTime = activeSession?.effectiveStartTime ?? mountTimeRef.current
   const paused             = activeSession?.paused             ?? false
 
-  const elapsed = useSessionTimer(effectiveStartTime, !paused)
+  // When recovering a paused session (localStorage or cloud), the timer hook
+  // starts at 0 before the first interval fires. Seed it with pausedElapsed
+  // so the display is correct immediately on mount.
+  const elapsed = useSessionTimer(
+    effectiveStartTime,
+    !paused,
+    paused ? (activeSession?.pausedElapsed ?? 0) : 0,
+  )
 
   // Auto-stop at daily cap with a 5-minute warning
   const capRemainingMs = activeSession?.capRemainingMs ?? Infinity
@@ -67,9 +86,9 @@ export default function LiveSession() {
     if (elapsed >= capRemainingMs) {
       toast.info('Daily limit reached — session ended automatically')
       const endMs = Date.now()
-      // Use the cap value directly — rounding elapsed can overshoot by a minute
       const totalMinutes = Math.max(1, capRemainingMs / 60000)
       clearActiveSession()
+      deleteActiveSession(familyId).catch(() => {})
       navigate('/session/summary', {
         state: { config, startMs: sessionStartedAt, endMs, totalMinutes },
         replace: true,
@@ -80,18 +99,23 @@ export default function LiveSession() {
   if (!config) return null
 
   function handlePause() {
+    const newState = { ...activeSession, paused: true, pausedElapsed: elapsed }
     updateActiveSession({ paused: true, pausedElapsed: elapsed })
+    saveActiveSession(familyId, newState).catch(() => {})
   }
 
   function handleResume() {
     const newEffective = Date.now() - elapsed
+    const newState = { ...activeSession, paused: false, effectiveStartTime: newEffective }
     updateActiveSession({ paused: false, effectiveStartTime: newEffective })
+    saveActiveSession(familyId, newState).catch(() => {})
   }
 
   function handleEnd() {
     const endMs = Date.now()
     const totalMinutes = Math.max(1, Math.round(elapsed / 60000))
     clearActiveSession()
+    deleteActiveSession(familyId).catch(() => {})
     navigate('/session/summary', {
       state: { config, startMs: sessionStartedAt, endMs, totalMinutes },
       replace: true,

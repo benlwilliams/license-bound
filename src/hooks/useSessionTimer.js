@@ -4,8 +4,8 @@ import { useState, useEffect, useRef } from 'react'
  * Returns elapsed milliseconds since startTime (a Date or ms value).
  * Ticks every second while running.
  */
-export function useSessionTimer(startTime, running = true) {
-  const [elapsed, setElapsed] = useState(0)
+export function useSessionTimer(startTime, running = true, initialElapsed = 0) {
+  const [elapsed, setElapsed] = useState(initialElapsed)
   const intervalRef = useRef(null)
 
   useEffect(() => {
